@@ -184,6 +184,11 @@ endif()
 #
 
 xoption(QJS_BUILD_LIBC "Build standard library modules as part of the library" OFF)
+set(_default_dumps_value OFF)
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
+set(_default_dumps_value ON)
+endif()
+xoption(QJS_ENABLE_DUMPS "Build the library with Debug trace system / Dump stream support" ${_default_dumps_value})
 macro(add_qjs_libc_if_needed target)
     if(NOT QJS_BUILD_LIBC)
         target_sources(${target} PRIVATE quickjs-libc.c)

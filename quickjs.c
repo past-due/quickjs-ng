@@ -75,7 +75,7 @@
 #define __extension__
 #endif
 
-#ifndef NDEBUG
+#if defined(QJS_ENABLE_DUMPS)
 #define ENABLE_DUMPS
 #endif
 
