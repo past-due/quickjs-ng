@@ -25,30 +25,35 @@ ci_freebsd_task:
   init_git_submodules_script: git submodule update --init --recursive
 
   set_build_env_script: |
+    BUILD_DIR=build
+    echo "BUILD_DIR=$BUILD_DIR" >> $CIRRUS_ENV;
+    echo "RUN262=$BUILD_DIR/run-test262" >> $CIRRUS_ENV;
+    BUILD_TYPE="Release"
     if [ "$CONFIGTYPE" = "Debug" ]; then
-      echo "BUILD_TYPE=Debug" >> $CIRRUS_ENV;
+      BUILD_TYPE="Debug"
     elif [ "$CONFIGTYPE" = "Release" ]; then
-      echo "BUILD_TYPE=Release" >> $CIRRUS_ENV;
+      BUILD_TYPE="Release"
     elif [ "$CONFIGTYPE" = "examples" ]; then
       echo "QJS_BUILD_EXAMPLES=ON" >> $CIRRUS_ENV;
     elif [ "$CONFIGTYPE" = "shared" ]; then
       echo "BUILD_SHARED_LIBS=ON" >> $CIRRUS_ENV;
     elif [ "$CONFIGTYPE" = "asan+ubsan" ]; then
-      echo "BUILD_TYPE=RelWithDebInfo" >> $CIRRUS_ENV;
+      BUILD_TYPE="RelWithDebInfo"
       echo "QJS_ENABLE_ASAN=ON" >> $CIRRUS_ENV;
       echo "QJS_ENABLE_UBSAN=ON" >> $CIRRUS_ENV;
     fi
+    echo "BUILD_TYPE=$BUILD_TYPE" >> $CIRRUS_ENV;
 
-  stats_script: |
-    if [ "$CONFIGTYPE" != "examples" ]; then
-      make stats
-    fi
+  cmake_configure_script: cmake -B "${BUILD_DIR}" -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 
-  cxxtest_script: make cxxtest
+  build_script: |
+    cmake --build "${BUILD_DIR}"
 
   test_script: |
     if [ "$CONFIGTYPE" != "examples" ]; then
-      make test
+      ${RUN262} -c tests.conf
+    else
+      echo "Skipped"
     fi
 
   test_examples_script: |
@@ -59,12 +64,16 @@ ci_freebsd_task:
       ./build/qjs examples/test_point.js
       ./build/qjs tests/test_bjson.js
       ./build/function_source
+    else
+      echo "Skipped"
     fi
 
   test_262_script: |
     if [ "$RUN_TEST_262" = "true" ]; then
       git submodule update --init --checkout --depth 1
-      time make test262
+      time ${RUN262} -m -c test262.conf -a
+    else
+      echo "Skipped"
     fi
 
   test_standalone_script: |
