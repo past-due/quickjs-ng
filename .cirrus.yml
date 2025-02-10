@@ -1,73 +1,74 @@
 # CirrusCI - test builds on FreeBSD instances
 # See: https://cirrus-ci.org; https://cirrus-ci.org/guide/FreeBSD/
 
-freebsd_ci_task:
+ci_freebsd_task:
 
   freebsd_instance:
     # See the list of available FreeBSD image families here: https://cirrus-ci.org/guide/FreeBSD/
-    matrix:
-      - image_family: freebsd-14-1 # FreeBSD 14.1-RELEASE
+    image_family: freebsd-14-1 # FreeBSD 14.1-RELEASE
 
   env:
     matrix:
-      QJS_CI_CONFIGTYPE: Debug
-      QJS_CI_CONFIGTYPE: Release
-      QJS_CI_CONFIGTYPE: examples
-      QJS_CI_CONFIGTYPE: shared
+      - CONFIGTYPE: Debug
+      - CONFIGTYPE: Release
+        RUN_TEST_262: true
+      - CONFIGTYPE: examples
+      - CONFIGTYPE: shared
+
+  name: ci / freebsd ($CONFIGTYPE)
 
   install_deps_script:
     - pkg update -f
     - pkg clean -a -y
-    - pkg install -y git cmake ninja pkgconf
+    - pkg install -y git cmake ninja
 
   init_git_submodules_script: git submodule update --init --recursive
 
   set_build_env_script: |
-    if [ "$QJS_CI_CONFIGTYPE" = "Debug" ]; then
+    if [ "$CONFIGTYPE" = "Debug" ]; then
       echo "BUILD_TYPE=Debug" >> $CIRRUS_ENV;
-    elif [ "$QJS_CI_CONFIGTYPE" = "Release" ]; then
+    elif [ "$CONFIGTYPE" = "Release" ]; then
       echo "BUILD_TYPE=Release" >> $CIRRUS_ENV;
-    elif [ "$QJS_CI_CONFIGTYPE" = "examples" ]; then
+    elif [ "$CONFIGTYPE" = "examples" ]; then
       echo "QJS_BUILD_EXAMPLES=ON" >> $CIRRUS_ENV;
-    elif [ "$QJS_CI_CONFIGTYPE" = "shared" ]; then
+    elif [ "$CONFIGTYPE" = "shared" ]; then
       echo "BUILD_SHARED_LIBS=ON" >> $CIRRUS_ENV;
-    elif [ "$QJS_CI_CONFIGTYPE" = "asan+ubsan" ]; then
+    elif [ "$CONFIGTYPE" = "asan+ubsan" ]; then
       echo "BUILD_TYPE=RelWithDebInfo" >> $CIRRUS_ENV;
       echo "QJS_ENABLE_ASAN=ON" >> $CIRRUS_ENV;
       echo "QJS_ENABLE_UBSAN=ON" >> $CIRRUS_ENV;
     fi
 
-  stats_task:
-    only_if: $QJS_CI_CONFIGTYPE != 'examples'
-    script: make stats
+  stats_script: |
+    if [ "$CONFIGTYPE" != "examples" ]; then
+      make stats
+    fi
 
-  cxxtest_task:
-    script: make cxxtest
+  cxxtest_script: make cxxtest
 
-  test_task:
-    only_if: $QJS_CI_CONFIGTYPE != 'examples'
-    script: make test
+  test_script: |
+    if [ "$CONFIGTYPE" != "examples" ]; then
+      make test
+    fi
 
-  test_examples_task:
-    only_if: $QJS_CI_CONFIGTYPE == 'examples'
-    script: |
+  test_examples_script: |
+    if [ "$CONFIGTYPE" = "examples" ]; then
       cp build/fib.so examples/
       cp build/point.so examples/
       ./build/qjs examples/test_fib.js
       ./build/qjs examples/test_point.js
       ./build/qjs tests/test_bjson.js
       ./build/function_source
+    fi
 
-  test_262_task:
-    only_if: $QJS_CI_CONFIGTYPE == 'Release'
-    script: |
+  test_262_script: |
+    if [ "$RUN_TEST_262" = "true" ]; then
       git submodule update --init --checkout --depth 1
       time make test262
+    fi
 
-  test_standalone_task:
-    script: |
+  test_standalone_script: |
       ./build/qjs -c examples/hello.js -o hello
       ./hello
 
-  test_interrupt_task:
-    script: ./build/interrupt-test
+  test_interrupt_script: ./build/interrupt-test
