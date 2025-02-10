@@ -37,18 +37,18 @@ freebsd_ci_task:
       echo "QJS_ENABLE_UBSAN=ON" >> $CIRRUS_ENV;
     fi
 
-  stats_script:
+  stats_task:
     only_if: $QJS_CI_CONFIGTYPE != 'examples'
     script: make stats
 
-  cxxtest_script:
+  cxxtest_task:
     script: make cxxtest
 
-  test_script:
+  test_task:
     only_if: $QJS_CI_CONFIGTYPE != 'examples'
     script: make test
 
-  test_examples_script:
+  test_examples_task:
     only_if: $QJS_CI_CONFIGTYPE == 'examples'
     script: |
       cp build/fib.so examples/
@@ -58,16 +58,16 @@ freebsd_ci_task:
       ./build/qjs tests/test_bjson.js
       ./build/function_source
 
-  test_262_script:
+  test_262_task:
     only_if: $QJS_CI_CONFIGTYPE == 'Release'
     script: |
       git submodule update --init --checkout --depth 1
       time make test262
 
-  test_standalone_script:
+  test_standalone_task:
     script: |
       ./build/qjs -c examples/hello.js -o hello
       ./hello
 
-  test_interrupt_script:
+  test_interrupt_task:
     script: ./build/interrupt-test
