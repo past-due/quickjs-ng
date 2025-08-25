@@ -20647,7 +20647,6 @@ static __exception int next_token(JSParseState *s)
     int c;
     bool ident_has_escape;
     JSAtom atom;
-    int flags, radix;
 
     if (js_check_stack_overflow(s->ctx->rt, 1000)) {
         JS_ThrowStackOverflow(s->ctx);
