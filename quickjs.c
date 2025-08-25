@@ -20842,36 +20842,17 @@ static __exception int next_token(JSParseState *s)
             break;
         }
         if (p[1] >= '0' && p[1] <= '9') {
-            flags = ATOD_ACCEPT_UNDERSCORES | ATOD_ACCEPT_FLOAT;
-            radix = 10;
             goto parse_number;
+        } else {
+            goto def_token;
         }
-        goto def_token;
+        break;
     case '0':
-        if (is_digit(p[1])) { /* handle legacy octal */
-            if (s->cur_func->is_strict_mode) {
-                js_parse_error(s, "Octal literals are not allowed in strict mode");
-                goto fail;
-            }
-            /* Legacy octal: no separators, no suffix, no floats,
-               base 8 unless non octal digits are detected */
-            flags = 0;
-            radix = 8;
-            while (is_digit(*p)) {
-                if (*p >= '8' && *p <= '9')
-                    radix = 10;
-                p++;
-            }
-            p = s->token.ptr;
-            goto parse_number;
-        }
-        if (p[1] == '_') {
-            js_parse_error(s, "Numeric separator can not be used after leading 0");
+        /* in strict mode, octal literals are not accepted */
+        if (is_digit(p[1]) && (s->cur_func->js_mode & JS_MODE_STRICT)) {
+            js_parse_error(s, "octal literals are deprecated in strict mode");
             goto fail;
         }
-        flags = ATOD_ACCEPT_HEX_PREFIX | ATOD_ACCEPT_BIN_OCT |
-            ATOD_ACCEPT_FLOAT | ATOD_ACCEPT_UNDERSCORES | ATOD_ACCEPT_SUFFIX;
-        radix = 10;
         goto parse_number;
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8':
@@ -20890,7 +20871,7 @@ static __exception int next_token(JSParseState *s)
                 goto fail;
             /* reject `10instanceof Number` */
             if (JS_VALUE_IS_NAN(ret) ||
-                lre_js_is_ident_next(unicode_from_utf8(p, UTF8_CHAR_LEN_MAX, &p1))) {
+                lre_js_is_ident_next(utf8_decode(p, &p1))) {
                 JS_FreeValue(s->ctx, ret);
                 js_parse_error(s, "invalid number literal");
                 goto fail;
@@ -42430,7 +42411,7 @@ static JSValue js_number_toExponential(JSContext *ctx, JSValueConst this_val,
     if (JS_ToInt32Sat(ctx, &f, argv[0]))
         return JS_EXCEPTION;
     if (!isfinite(d)) {
-        return JS_ToStringFree(ctx,  __JS_NewFloat64(ctx, d));
+        return JS_ToStringFree(ctx,  __JS_NewFloat64(d));
     }
     if (JS_IsUndefined(argv[0])) {
         flags = JS_DTOA_FORMAT_FREE;
@@ -42462,7 +42443,7 @@ static JSValue js_number_toPrecision(JSContext *ctx, JSValueConst this_val,
         return JS_EXCEPTION;
     if (!isfinite(d)) {
     to_string:
-        return JS_ToStringFree(ctx,  __JS_NewFloat64(ctx, d));
+        return JS_ToStringFree(ctx,  __JS_NewFloat64(d));
     }
     if (p < 1 || p > 100)
         return JS_ThrowRangeError(ctx, "invalid number of digits");
