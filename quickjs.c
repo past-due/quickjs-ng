@@ -20849,8 +20849,8 @@ static __exception int next_token(JSParseState *s)
         break;
     case '0':
         /* in strict mode, octal literals are not accepted */
-        if (is_digit(p[1]) && (s->cur_func->js_mode & JS_MODE_STRICT)) {
-            js_parse_error(s, "octal literals are deprecated in strict mode");
+        if (is_digit(p[1]) && (s->cur_func->is_strict_mode)) {
+            js_parse_error(s, "Octal literals are not allowed in strict mode");
             goto fail;
         }
         goto parse_number;

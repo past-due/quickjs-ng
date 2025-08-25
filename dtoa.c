@@ -1413,7 +1413,7 @@ double js_atod(const char *str, const char **pnext, int radix, int flags,
             goto fail;
     no_prefix: ;
     } else {
-        if (!(flags & JS_ATOD_INT_ONLY) && strstart(p, "Infinity", &p))
+        if (!(flags & JS_ATOD_INT_ONLY) && js__strstart(p, "Infinity", &p))
             goto overflow;
     }
     if (radix == 0)
