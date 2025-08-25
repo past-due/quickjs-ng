@@ -12047,7 +12047,7 @@ static JSValue js_atof(JSContext *ctx, const char *str, const char **pp,
  no_radix_prefix:
         if (!(flags & ATOD_INT_ONLY) &&
             (atod_type == ATOD_TYPE_FLOAT64) &&
-            strstart(p, "Infinity", &p)) {
+            js__strstart(p, "Infinity", &p)) {
             double d = 1.0 / 0.0;
             if (is_neg)
                 d = -d;
