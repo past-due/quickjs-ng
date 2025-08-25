@@ -12039,7 +12039,7 @@ static JSValue js_atof(JSContext *ctx, const char *str, const char **pp,
         if (!(flags & ATOD_INT_ONLY) &&
             (atod_type == ATOD_TYPE_FLOAT64) &&
             js__strstart(p, "Infinity", &p)) {
-            double d = 1.0 / 0.0;
+            double d = INF;
             if (is_neg)
                 d = -d;
             val = JS_NewFloat64(ctx, d);
