@@ -10586,6 +10586,15 @@ static inline js_limb_t js_limb_clz(js_limb_t a)
     return clz32(a);
 }
 
+/* handle a = 0 too */
+static inline js_limb_t js_limb_safe_clz(js_limb_t a)
+{
+    if (a == 0)
+        return JS_LIMB_BITS;
+    else
+        return js_limb_clz(a);
+}
+
 static js_limb_t mp_add(js_limb_t *res, const js_limb_t *op1, const js_limb_t *op2,
                      js_limb_t n, js_limb_t carry)
 {
@@ -11877,7 +11886,7 @@ static JSValue js_bigint_to_string1(JSContext *ctx, JSValueConst val, int radix)
             r = tmp;
         }
         log2_radix = 31 - clz32(radix); /* floor(log2(radix)) */
-        n_bits = r->len * JS_LIMB_BITS - js_limb_clz(r->tab[r->len - 1]);
+        n_bits = r->len * JS_LIMB_BITS - js_limb_safe_clz(r->tab[r->len - 1]);
         /* n_digits is exact only if radix is a power of
            two. Otherwise it is >= the exact number of digits */
         n_digits = (n_bits + log2_radix - 1) / log2_radix;
@@ -11976,17 +11985,17 @@ static JSValue js_atof(JSContext *ctx, const char *str, const char **pp,
 {
     const char *p, *p_start;
     int sep, is_neg;
-    BOOL is_float, has_legacy_octal;
+    bool is_float, has_legacy_octal;
     int atod_type = flags & ATOD_TYPE_MASK;
     char buf1[64], *buf;
     int i, j, len;
-    BOOL buf_allocated = FALSE;
+    bool buf_allocated = false;
     JSValue val;
     JSATODTempMem atod_mem;
     
     /* optional separator between digits */
     sep = (flags & ATOD_ACCEPT_UNDERSCORES) ? '_' : 256;
-    has_legacy_octal = FALSE;
+    has_legacy_octal = false;
 
     p = str;
     p_start = p;
@@ -12019,7 +12028,7 @@ static JSValue js_atof(JSContext *ctx, const char *str, const char **pp,
         } else if ((p[1] >= '0' && p[1] <= '9') &&
                    radix == 0 && (flags & ATOD_ACCEPT_LEGACY_OCTAL)) {
             int i;
-            has_legacy_octal = TRUE;
+            has_legacy_octal = true;
             sep = 256;
             for (i = 1; (p[i] >= '0' && p[i] <= '7'); i++)
                 continue;
@@ -12048,7 +12057,7 @@ static JSValue js_atof(JSContext *ctx, const char *str, const char **pp,
     }
     if (radix == 0)
         radix = 10;
-    is_float = FALSE;
+    is_float = false;
     p_start = p;
     while (to_digit((uint8_t)*p) < radix
            ||  (*p == sep && (radix != 10 ||
@@ -12058,7 +12067,7 @@ static JSValue js_atof(JSContext *ctx, const char *str, const char **pp,
     }
     if (!(flags & ATOD_INT_ONLY)) {
         if (*p == '.' && (p > p_start || to_digit((uint8_t)p[1]) < radix)) {
-            is_float = TRUE;
+            is_float = true;
             p++;
             if (*p == sep)
                 goto fail;
@@ -12070,7 +12079,7 @@ static JSValue js_atof(JSContext *ctx, const char *str, const char **pp,
             (((*p == 'e' || *p == 'E') && radix == 10) ||
              ((*p == 'p' || *p == 'P') && (radix == 2 || radix == 8 || radix == 16)))) {
             const char *p1 = p + 1;
-            is_float = TRUE;
+            is_float = true;
             if (*p1 == '+') {
                 p1++;
             } else if (*p1 == '-') {
@@ -12087,13 +12096,13 @@ static JSValue js_atof(JSContext *ctx, const char *str, const char **pp,
         goto fail;
 
     buf = buf1;
-    buf_allocated = FALSE;
+    buf_allocated = false;
     len = p - p_start;
     if (unlikely((len + 2) > sizeof(buf1))) {
         buf = js_malloc_rt(ctx->rt, len + 2); /* no exception raised */
         if (!buf)
             goto mem_error;
-        buf_allocated = TRUE;
+        buf_allocated = true;
     }
     /* remove the separators and the radix prefixes */
     j = 0;
