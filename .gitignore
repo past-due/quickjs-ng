@@ -13,3 +13,4 @@ fuzz
 .vscode/
 microbench*.txt
 /build_xcode
+/extracted
