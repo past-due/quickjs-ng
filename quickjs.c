@@ -17969,7 +17969,7 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
                         goto exception;
                     }
                 }
-                ret = JS_SetPropertyInternal(ctx, sp[-3], atom, sp[-1], sp[-3], JS_PROP_THROW_STRICT);
+                ret = JS_SetPropertyInternal2(ctx, sp[-3], atom, sp[-1], sp[-3], JS_PROP_THROW_STRICT);
                 JS_FreeAtom(ctx, atom);
                 JS_FreeValue(ctx, sp[-2]);
                 JS_FreeValue(ctx, sp[-3]);
