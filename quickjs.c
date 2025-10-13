@@ -24908,20 +24908,12 @@ static __exception int js_parse_postfix_expr(JSParseState *s, int parse_flags)
         break;
     case '{':
     case '[':
-        {
-            int skip_bits;
-            if (js_parse_skip_parens_token(s, &skip_bits, false) == '=') {
-                if (js_parse_destructuring_element(s, 0, false, false, skip_bits & SKIP_HAS_ELLIPSIS, true, false) < 0)
-                    return -1;
-            } else {
-                if (s->token.val == '{') {
-                    if (js_parse_object_literal(s))
-                        return -1;
-                } else {
-                    if (js_parse_array_literal(s))
-                        return -1;
-                }
-            }
+        if (s->token.val == '{') {
+            if (js_parse_object_literal(s))
+                return -1;
+        } else {
+            if (js_parse_array_literal(s))
+                return -1;
         }
         break;
     case TOK_NEW:
@@ -25856,7 +25848,7 @@ static __exception int js_parse_cond_expr(JSParseState *s, int parse_flags)
 /* allowed parse_flags: PF_IN_ACCEPTED */
 static __exception int js_parse_assign_expr2(JSParseState *s, int parse_flags)
 {
-    int opcode, op, scope;
+    int opcode, op, scope, skip_bits;
     JSAtom name0 = JS_ATOM_NULL;
     JSAtom name;
 
@@ -26038,6 +26030,11 @@ static __exception int js_parse_assign_expr2(JSParseState *s, int parse_flags)
                                       JS_FUNC_NORMAL, JS_ATOM_NULL,
                                       s->token.ptr, s->token.line_num,
                                       s->token.col_num);
+    } else if ((s->token.val == '{' || s->token.val == '[') &&
+               js_parse_skip_parens_token(s, &skip_bits, false) == '=') {
+        if (js_parse_destructuring_element(s, 0, false, false, skip_bits & SKIP_HAS_ELLIPSIS, true, false) < 0)
+            return -1;
+        return 0;
     }
  next:
     if (s->token.val == TOK_IDENT) {
