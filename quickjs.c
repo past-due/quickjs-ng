@@ -41302,16 +41302,23 @@ static void js_array_iterator_mark(JSRuntime *rt, JSValueConst val,
 static JSValue js_create_array(JSContext *ctx, int len, JSValueConst *tab)
 {
     JSValue obj;
+    JSObject *p;
     int i;
 
     obj = JS_NewArray(ctx);
     if (JS_IsException(obj))
         return JS_EXCEPTION;
-    for(i = 0; i < len; i++) {
-        if (JS_CreateDataPropertyUint32(ctx, obj, i, js_dup(tab[i]), 0) < 0) {
+    if (len > 0) {
+        p = JS_VALUE_GET_OBJ(obj);
+        if (expand_fast_array(ctx, p, len) < 0) {
             JS_FreeValue(ctx, obj);
             return JS_EXCEPTION;
         }
+        p->u.array.count = len;
+        for(i = 0; i < len; i++) 
+            p->u.array.u.values[i] = JS_DupValue(ctx, tab[i]);
+        /* update the 'length' field */
+        set_value(ctx, &p->prop[0].u.value, JS_NewInt32(ctx, len));
     }
     return obj;
 }
